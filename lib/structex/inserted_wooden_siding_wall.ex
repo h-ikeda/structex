@@ -195,6 +195,7 @@ defmodule Structex.InsertedWoodenSidingWall do
   defp dent_coefficient(d, b, t, n) when d > 0 and b > 0 and t > 0 and n > 0 do
     1 + 4 / 3 * d * (1 - :math.exp(-3 / 4 * n * (b - t) / d)) / n / t
   end
+
   @doc """
   板壁の剛性Kの逆数
 
