@@ -221,4 +221,66 @@ defmodule Structex.InsertedWoodenSidingWallTest do
                     0.0018291796483481683,
                     1.0e-17
   end
+
+  test "shear_connecter_yield_resistance/5" do
+    assert_in_delta InsertedWoodenSidingWall.shear_connecter_yield_resistance(
+                      5,
+                      3.38,
+                      174.5,
+                      270,
+                      0.4
+                    ),
+                    44.34661654135338,
+                    1.0e-13
+
+    assert_in_delta InsertedWoodenSidingWall.shear_connecter_yield_resistance(
+                      5,
+                      3.38,
+                      91,
+                      240.5,
+                      0
+                    ),
+                    16.9,
+                    1.0e-13
+  end
+
+  test "diagonal_siding_zone_yield_resistance/6" do
+    assert_in_delta InsertedWoodenSidingWall.diagonal_siding_zone_yield_resistance(
+                      2.147,
+                      0.2984,
+                      2.7,
+                      174.5,
+                      270,
+                      0.05
+                    ),
+                    20.6612520784784,
+                    1.0e-13
+  end
+
+  test "yield_resistance/1" do
+    assert_in_delta InsertedWoodenSidingWall.yield_resistance(
+                      number_of_shear_connecters: 5,
+                      single_connecter_yield_resistance: 3.38,
+                      fiber_direction_compressive_strength: 2.147,
+                      fiber_orthogonal_direction_compressive_strength: 0.2984,
+                      thickness: 2.7,
+                      frame_inner_width: 174.5,
+                      frame_inner_height: 270
+                    ),
+                    16.9,
+                    1.0e-13
+
+    assert_in_delta InsertedWoodenSidingWall.yield_resistance(
+                      number_of_shear_connecters: 5,
+                      single_connecter_yield_resistance: 3.38,
+                      fiber_direction_compressive_strength: 2.147,
+                      fiber_orthogonal_direction_compressive_strength: 0.2984,
+                      thickness: 2.7,
+                      frame_inner_width: 174.5,
+                      frame_inner_height: 270,
+                      friction_coefficient: 0.4
+                    ),
+                    20.6612520784784,
+                    1.0e-13
+  end
 end

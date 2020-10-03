@@ -238,4 +238,84 @@ defmodule Structex.InsertedWoodenSidingWall do
       column_side_inverted_rigidity +
       beam_side_inverted_rigidity(eb, d, bb, nb, t, l, h)
   end
+
+  @doc """
+  ダボがせん断降伏するときの耐力Pud
+
+  number_of_shear_connecters - 板1列あたりのダボ本数
+  single_connecter_yield_resistance - ダボ1本の降伏せん断耐力
+  frame_inner_width - 軸組の内法幅
+  frame_inner_height - 軸組の内法高さ
+  friction_coefficient - 板同士の摩擦係数
+  """
+  @spec shear_connecter_yield_resistance(
+          number_of_shear_connecters :: pos_integer,
+          single_connecter_yield_resistance :: number,
+          frame_inner_width :: number,
+          frame_inner_height :: number,
+          friction_coefficient :: number
+        ) :: float
+  def shear_connecter_yield_resistance(nd, py, l, h, fc)
+      when is_integer(nd) and nd > 0 and py > 0 and l > 0 and h > 0 and fc >= 0 and h / l * fc < 1 do
+    nd * py / (1 - h * fc / l)
+  end
+
+  @doc """
+  板の圧縮筋かいゾーンの上下端部領域が全塑性圧縮に達するときの終局耐力Pua
+
+  fiber_direction_compressive_strength - 繊維方向の圧縮強度
+  fiber_orthogonal_direction_compressive_strength - 繊維直行方向の圧縮強度
+  thickness - 板厚
+  frame_inner_width - 軸組の内法幅
+  frame_inner_height - 軸組の内法高さ
+  yield_judgement_ratio - 全塑性圧縮域の対角長さに対する比
+  """
+  @spec diagonal_siding_zone_yield_resistance(
+          fiber_direction_compressive_strength :: number,
+          fiber_orthogonal_direction_compressive_strength :: number,
+          thickness :: number,
+          frame_inner_width :: number,
+          frame_inner_height :: number,
+          yield_judgement_ratio :: number
+        ) :: float
+  def diagonal_siding_zone_yield_resistance(fc, fcv, t, l, h, r)
+      when fc > 0 and fcv > 0 and t > 0 and l > 0 and h > 0 and 0 <= r and r <= 1 do
+    r * t * fc * fcv * (l * l + h * h) * (l * l + h * h) / (fc * h * h + fcv * l * l) / h
+  end
+
+  @doc """
+  板壁の終局耐力Pu
+
+  Accepted parameters:
+    number_of_shear_connecters - 板1列あたりのダボ本数
+    single_connecter_yield_resistance - ダボ1本の降伏せん断耐力
+    fiber_direction_compressive_strength - 繊維方向の圧縮強度
+    fiber_orthogonal_direction_compressive_strength - 繊維直行方向の圧縮強度
+    thickness - 板厚
+    frame_inner_width - 軸組の内法幅
+    frame_inner_height - 軸組の内法高さ
+    yield_judgement_ratio - 全塑性圧縮域の対角長さに対する比
+    friction_coefficient - 板同士の摩擦係数
+  """
+  @spec yield_resistance(map | keyword) :: float
+  def yield_resistance(params) when is_list(params) do
+    yield_resistance(Enum.into(params, %{}))
+  end
+
+  def yield_resistance(%{} = params) do
+    nd = params.number_of_shear_connecters
+    py = params.single_connecter_yield_resistance
+    l = params.frame_inner_width
+    h = params.frame_inner_height
+    c = Map.get(params, :friction_coefficient, 0)
+    fc = params.fiber_direction_compressive_strength
+    fcv = params.fiber_orthogonal_direction_compressive_strength
+    t = params.thickness
+    r = Map.get(params, :yield_judgement_ratio, 0.05)
+
+    min(
+      shear_connecter_yield_resistance(nd, py, l, h, c),
+      diagonal_siding_zone_yield_resistance(fc, fcv, t, l, h, r)
+    )
+  end
 end
