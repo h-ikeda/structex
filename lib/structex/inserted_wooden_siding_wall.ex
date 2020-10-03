@@ -23,25 +23,6 @@ defmodule Structex.InsertedWoodenSidingWall do
   end
 
   @doc """
-  ダボのせん断による剛性Kdの逆数
-
-  single_connecter_rigidity - ダボ1本のせん断剛性
-  connecter_number - 板1列あたりのダボ本数
-  siding_width - 板幅
-  wall_inner_height - 軸組の内法高さ
-  """
-  @spec shear_connecter_inverted_rigidity(
-          single_connecter_rigidity :: number,
-          connecter_number :: non_neg_integer,
-          siding_width :: number,
-          wall_inner_height :: number
-        ) :: float
-  def shear_connecter_inverted_rigidity(kd, nd, w, h)
-      when kd > 0 and is_integer(nd) and nd > 0 and w > 0 and h > 0 do
-    (floor(h / w) - 1) / nd / kd / h
-  end
-
-  @doc """
   ダボのせん断による剛性Kdの逆数 (摩擦力を考慮した場合)
 
   single_connecter_rigidity - ダボ1本のせん断剛性

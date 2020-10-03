@@ -24,21 +24,6 @@ defmodule Structex.InsertedWoodenSidingWallTest do
     assert InsertedWoodenSidingWall.first_slip_deformation_angle(174.5, 270, 0, 0) === 0.0
   end
 
-  test "shear_connecter_inverted_rigidity/4" do
-    assert_in_delta InsertedWoodenSidingWall.shear_connecter_inverted_rigidity(11, 5, 13.5, 270),
-                    0.0012794612794612794,
-                    1.0e-17
-
-    assert_in_delta InsertedWoodenSidingWall.shear_connecter_inverted_rigidity(
-                      0.11,
-                      5,
-                      0.135,
-                      2.7
-                    ),
-                    12.794612794612794,
-                    1.0e-13
-  end
-
   test "shear_connecter_inverted_rigidity_with_friction/6" do
     assert_in_delta InsertedWoodenSidingWall.shear_connecter_inverted_rigidity_with_friction(
                       11,
