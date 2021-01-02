@@ -1,5 +1,5 @@
 defmodule Structex.InsertedWoodenSidingWallTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Structex.InsertedWoodenSidingWall
   doctest InsertedWoodenSidingWall
 
