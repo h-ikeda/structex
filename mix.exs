@@ -9,18 +9,18 @@ defmodule Structex.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       test_coverage:
-      if System.get_env("CI") do
-        [tool: :covertool]
-      else
-        []
-      end,
-    source_url: "https://github.com/h-ikeda/structex",
-    # docs: [logo: "logo.svg"],
-    description: "Structural calculation functions.",
-    package: [
-      licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/h-ikeda/structex"}
-    ]
+        if System.get_env("CI") do
+          [tool: :covertool]
+        else
+          []
+        end,
+      source_url: "https://github.com/h-ikeda/structex",
+      # docs: [logo: "logo.svg"],
+      description: "Structural calculation functions.",
+      package: [
+        licenses: ["MIT"],
+        links: %{"GitHub" => "https://github.com/h-ikeda/structex"}
+      ]
     ]
   end
 
