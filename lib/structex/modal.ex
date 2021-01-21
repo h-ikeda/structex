@@ -262,4 +262,50 @@ defmodule Structex.Modal do
         superimpose(modal_response, :cqc, mode_vectors, correlations)
     end
   end
+
+  @doc """
+  Returns the stiffness propotional damping matrix.
+
+      iex> Structex.Modal.stiffness_propotional_damping(
+      ...>   Tensorex.from_list([[30.2, -30.2, 0], [-30.2, 70.3, -40.1], [0, -40.1, 96.5]]),
+      ...>   5.236,
+      ...>   0.08
+      ...> )
+      %Tensorex{data: %{[0, 0] =>  0.9228418640183346, [0, 1] => -0.9228418640183346,
+                        [1, 0] => -0.9228418640183346, [1, 1] =>  2.1482047364400305, [1, 2] => -1.225362872421696,
+                                                       [2, 1] => -1.225362872421696 , [2, 2] =>  2.948815889992361}, shape: [3, 3]}
+  """
+  @spec stiffness_propotional_damping(Tensorex.t(), number, number) :: Tensorex.t()
+  def stiffness_propotional_damping(
+        %Tensorex{shape: [_, _]} = stiffness,
+        natural_angular_frequency,
+        damping_ratio
+      )
+      when is_number(natural_angular_frequency) and natural_angular_frequency > 0 and
+             is_number(damping_ratio) and damping_ratio >= 0 do
+    stiffness |> Tensorex.Operator.multiply(damping_ratio * 2 / natural_angular_frequency)
+  end
+
+  @doc """
+  Returns the mass propotional damping matrix.
+
+      iex> Structex.Modal.mass_propotional_damping(
+      ...>   Tensorex.from_list([[30.2, 0, 0], [0, 40.3, 0], [0, 0, 56.4]]),
+      ...>   5.236,
+      ...>   0.11
+      ...> )
+      %Tensorex{data: %{[0, 0] => 34.787984,
+                                             [1, 1] => 46.422376,
+                                                                  [2, 2] => 64.968288}, shape: [3, 3]}
+  """
+  @spec mass_propotional_damping(Tensorex.t(), number, number) :: Tensorex.t()
+  def mass_propotional_damping(
+        %Tensorex{shape: [_, _]} = mass,
+        natural_angular_frequency,
+        damping_ratio
+      )
+      when is_number(natural_angular_frequency) and natural_angular_frequency > 0 and
+             is_number(damping_ratio) and damping_ratio >= 0 do
+    mass |> Tensorex.Operator.multiply(damping_ratio * natural_angular_frequency * 2)
+  end
 end
