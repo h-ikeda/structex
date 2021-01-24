@@ -135,8 +135,14 @@ defmodule Structex do
   def compose(matrix_and_node_ids, range_indices \\ %{}) do
     {elements, new_range_indices} =
       Enum.map_reduce(matrix_and_node_ids, range_indices, fn {matrices, nodes}, acc ->
-        Stream.zip(matrices, nodes)
-        |> Stream.map(fn {row, node} ->
+                                           [5, 1] => -42.1,                                                [5, 5] =>  97.4,
+                                                            [6, 2] =>  -5,                                                  [6, 6] =>  5,
+                                                                           [7, 3] =>  -8,                                                 [7, 7] =>  8,
+                                                                                                                                                        [ 8, 8] =>  3.9,                  [ 8, 10] => -3.9,
+                                                                                                                                                                         [ 9, 9] =>  6.5,                   [ 9, 11] => -6.5,
+                                                                                                                                                        [10, 8] => -3.9,                  [10, 10] =>  3.9,
+                                                                                                                                                                         [11, 9] => -6.5,                   [11, 11] =>  6.5}, shape: [12, 12]},
+        %{0 => 4..5, 1 => 0..1, 2 => 2..3, 3 => 6..7, 4 => 8..9, 5 => 10..11}
           Stream.zip(row, nodes) |> Stream.map(&Tuple.insert_at(&1, 1, node))
         end)
         |> Stream.concat()
