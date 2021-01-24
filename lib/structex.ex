@@ -117,6 +117,14 @@ defmodule Structex do
       ...>     [1, 2]
       ...>   },
       ...>   {
+      ...>     [[Tensorex.from_list([[ 5  , 0], [0,  8  ]]), Tensorex.from_list([[ -5  , 0], [0,  -8  ]])], [Tensorex.from_list([[ -5  , 0], [0,  -8  ]]), Tensorex.from_list([[ 5  , 0], [0,  8  ]])]],
+      ...>     [3, 2]
+      ...>   },
+      ...>   {
+      ...>     [[Tensorex.from_list([[ 3.9, 0], [0,  6.5]]), Tensorex.from_list([[ -3.9, 0], [0,  -6.5]])], [Tensorex.from_list([[ -3.9, 0], [0,  -6.5]]), Tensorex.from_list([[ 3.9, 0], [0,  6.5]])]],
+      ...>     [4, 5]
+      ...>   },
+      ...>   {
       ...>     [[Tensorex.from_list([[63.1, 0], [0, 55.3]])]],
       ...>     [0]
       ...>   }
@@ -124,17 +132,9 @@ defmodule Structex do
       {
         %Tensorex{data: %{[0, 0] =>  56.1,                  [0, 2] => -24,                [0, 4] => -32.1,
                                            [1, 1] =>  56.1,                [1, 3] => -14,                  [1, 5] => -42.1,
-                          [2, 0] => -24  ,                  [2, 2] =>  24,
-                                           [3, 1] => -14  ,                [3, 3] =>  14,
+                          [2, 0] => -24  ,                  [2, 2] =>  29,                                                  [2, 6] => -5,
+                                           [3, 1] => -14  ,                [3, 3] =>  22,                                                 [3, 7] => -8,
                           [4, 0] => -32.1,                                                [4, 4] =>  95.2,
-                                           [5, 1] => -42.1,                                                [5, 5] =>  97.4}, shape: [6, 6]},
-        %{0 => 4..5, 1 => 0..1, 2 => 2..3}
-      }
-  """
-  @spec compose(Enum.t(), %{term => Range.t()}) :: {Tensorex.t(), %{term => Range.t()}}
-  def compose(matrix_and_node_ids, range_indices \\ %{}) do
-    {elements, new_range_indices} =
-      Enum.map_reduce(matrix_and_node_ids, range_indices, fn {matrices, nodes}, acc ->
                                            [5, 1] => -42.1,                                                [5, 5] =>  97.4,
                                                             [6, 2] =>  -5,                                                  [6, 6] =>  5,
                                                                            [7, 3] =>  -8,                                                 [7, 7] =>  8,
@@ -143,6 +143,14 @@ defmodule Structex do
                                                                                                                                                         [10, 8] => -3.9,                  [10, 10] =>  3.9,
                                                                                                                                                                          [11, 9] => -6.5,                   [11, 11] =>  6.5}, shape: [12, 12]},
         %{0 => 4..5, 1 => 0..1, 2 => 2..3, 3 => 6..7, 4 => 8..9, 5 => 10..11}
+      }
+  """
+  @spec compose(Enum.t(), %{term => Range.t()}) :: {Tensorex.t(), %{term => Range.t()}}
+  def compose(matrix_and_node_ids, range_indices \\ %{}) do
+    {elements, new_range_indices} =
+      Enum.map_reduce(matrix_and_node_ids, range_indices, fn {matrices, nodes}, acc ->
+        Stream.zip(matrices, nodes)
+        |> Stream.map(fn {row, node} ->
           Stream.zip(row, nodes) |> Stream.map(&Tuple.insert_at(&1, 1, node))
         end)
         |> Stream.concat()
