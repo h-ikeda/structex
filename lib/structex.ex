@@ -226,4 +226,10 @@ defmodule Structex do
 
     {composed, new_range_indices}
   end
+
+  @doc """
+  The standard acceleration due to gravity on the surface of the earth.
+  """
+  @spec standard_gravity_acceleration() :: float
+  def standard_gravity_acceleration(), do: 9.80665
 end
