@@ -28,13 +28,15 @@ defmodule Structex do
              {mass :: Tensorex.t(), damping :: Tensorex.t(), stiffness :: Tensorex.t()}),
           Tensorex.t(),
           (natural_period :: number, damping_ratio :: number -> number),
-          :srss | :cqc
+          :srss | :cqc,
+          number
         ) :: Tensorex.t()
   def limit_strength_response(
         model,
         %Tensorex{shape: [_]} = initial_distortion,
         acceleration_spectrum,
-        superimpose_method
+        superimpose_method,
+        tolerance \\ 1.0e-15
       )
       when is_function(model, 1) and is_function(acceleration_spectrum, 2) and
              superimpose_method in [:srss, :cqc] do
@@ -54,7 +56,7 @@ defmodule Structex do
         superimpose_method
       )
 
-    if initial_distortion == response do
+    if Tensorex.in_tolerance?(initial_distortion, response, tolerance) do
       response
     else
       limit_strength_response(model, response, acceleration_spectrum, superimpose_method)
