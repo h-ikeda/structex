@@ -1,4 +1,4 @@
-defmodule Structex.Model.MudPlasterWall do
+defmodule Structex.Hysteresis.MudPlasterWall do
   @moduledoc """
   The structural characteristic of the mud plaster wall.
 
@@ -7,21 +7,10 @@ defmodule Structex.Model.MudPlasterWall do
   committee of disign manual for traditional wooden buildings)'.
   """
   @doc """
-  Returns a skeleton function that represents the specific mud plaster wall.
-
-  The unit of distance is meter (m) and the unit of force is newton (N).
-
-      iex> Structex.Model.MudPlasterWall.skeleton(2.9, 2.6, 0.805, 0.06).(0.012)
-      1352.137681034483
-
-      iex> Structex.Model.MudPlasterWall.skeleton(2.9, 2.6, 0.805, 0.06).(0.028)
-      2610.4234655172418
-
-      iex> Structex.Model.MudPlasterWall.skeleton(2.1, 1.8, 1.98, 0.06).(0.049)
-      10941.479999999998
+  Returns a `t:Structex.Hysteresis.t/0` struct representing the specific mud plaster wall.
   """
-  @spec skeleton(number, number, number, number) :: (distortion :: number -> shear_force :: float)
-  def skeleton(structural_height, inner_height, inner_width, thickness)
+  @spec new(number, number, number, number) :: Structex.Hysteresis.t()
+  def new(structural_height, inner_height, inner_width, thickness)
       when is_number(structural_height) and structural_height > 0 and
              is_number(inner_height) and inner_height > 0 and
              is_number(inner_width) and inner_width > 0 and
@@ -29,12 +18,14 @@ defmodule Structex.Model.MudPlasterWall do
     ratio =
       (inner_height > inner_width and inner_width * inner_width / inner_height) || inner_height
 
-    fn distortion when is_number(distortion) ->
+    skeleton = fn distortion ->
       shear_stress =
         case abs(distortion) / structural_height do
           d when d >= 1 / 15 ->
             dx = (d - 1 / 15) / (1 / 10 - 1 / 15)
+
             min(inner_width * (dx * (34 - 58) + 58), (dx * (32 - 52) + 52) * 3.25 * ratio)
+            |> max(0.0)
 
           d when d >= 1 / 20 ->
             dx = (d - 1 / 20) / (1 / 15 - 1 / 20)
@@ -74,5 +65,15 @@ defmodule Structex.Model.MudPlasterWall do
 
       ((distortion < 0 and -shear_stress) || shear_stress) * thickness * 1000
     end
+
+    stiffness =
+      min(inner_width * 480 * 30, 480 * 15 * 3.25 * ratio) * thickness / structural_height * 1000
+
+    %Structex.Hysteresis{
+      skeleton: skeleton,
+      initial_stiffness: stiffness,
+      unloading_stiffness: stiffness,
+      model: :peak_oriented
+    }
   end
 end
