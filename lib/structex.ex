@@ -180,18 +180,6 @@ defmodule Structex do
               Map.put(ranges, node2, range)
             }
 
-          {%Tensorex{shape: [degree | _]} = matrix, node1, node2}, ranges
-          when is_map_key(ranges, node2) ->
-            max_index = Map.values(ranges) |> Stream.map(&Enum.max/1) |> Enum.max(fn -> -1 end)
-            new_max_index = max_index + degree
-            range = (max_index + 1)..new_max_index
-            size = new_max_index + 1
-
-            {
-              put_in(Tensorex.zero([size, size])[[range, ranges[node2]]], matrix),
-              Map.put(ranges, node1, range)
-            }
-
           {%Tensorex{shape: [degree | _]} = matrix, node, node}, ranges ->
             max_index = Map.values(ranges) |> Stream.map(&Enum.max/1) |> Enum.max(fn -> -1 end)
             new_max_index = max_index + degree
@@ -201,19 +189,6 @@ defmodule Structex do
             {
               put_in(Tensorex.zero([size, size])[[range, range]], matrix),
               Map.put(ranges, node, range)
-            }
-
-          {%Tensorex{shape: [degree | _]} = matrix, node1, node2}, ranges ->
-            max_index = Map.values(ranges) |> Stream.map(&Enum.max/1) |> Enum.max(fn -> -1 end)
-            new_max_index1 = max_index + degree
-            new_max_index2 = new_max_index1 + degree
-            range1 = (max_index + 1)..new_max_index1
-            range2 = (new_max_index1 + 1)..new_max_index2
-            size = new_max_index2 + 1
-
-            {
-              put_in(Tensorex.zero([size, size])[[range1, range2]], matrix),
-              ranges |> Map.put(node1, range1) |> Map.put(node2, range2)
             }
         end)
       end)
