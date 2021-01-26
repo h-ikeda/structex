@@ -277,7 +277,7 @@ defmodule Structex.Modal do
   """
   @spec stiffness_propotional_damping(Tensorex.t(), number, number) :: Tensorex.t()
   def stiffness_propotional_damping(
-        %Tensorex{shape: [_, _]} = stiffness,
+        %Tensorex{shape: [degrees, degrees]} = stiffness,
         natural_angular_frequency,
         damping_ratio
       )
@@ -300,12 +300,47 @@ defmodule Structex.Modal do
   """
   @spec mass_propotional_damping(Tensorex.t(), number, number) :: Tensorex.t()
   def mass_propotional_damping(
-        %Tensorex{shape: [_, _]} = mass,
+        %Tensorex{shape: [degrees, degrees]} = mass,
         natural_angular_frequency,
         damping_ratio
       )
       when is_number(natural_angular_frequency) and natural_angular_frequency > 0 and
              is_number(damping_ratio) and damping_ratio >= 0 do
     mass |> Tensorex.Operator.multiply(damping_ratio * natural_angular_frequency * 2)
+  end
+
+  @doc """
+  Calculates a modal damping ratio by the strain energy propotional method.
+
+  The argument must be an enumerable of three-element tuples containing an element's stiffness
+  matrix, an element's distortion vector and an element's damping ratio.
+
+      iex> Structex.Modal.strain_energy_propotional_damping([
+      ...>   {Tensorex.from_list([[0.8, -0.8], [-0.8, 0.8]]), Tensorex.from_list([0.5, 0.8]), 0.08},
+      ...>   {Tensorex.from_list([[1.2, -1.2], [-1.2, 1.2]]), Tensorex.from_list([0.8, 1.0]), 0.12}
+      ...> ])
+      0.096
+  """
+  @spec strain_energy_propotional_damping(Enum.t()) :: number
+  def strain_energy_propotional_damping(enumerable) do
+    enumerable
+    |> Stream.map(fn
+      {
+        %Tensorex{shape: [degrees, degrees]} = stiffness,
+        %Tensorex{shape: [degrees]} = distortion,
+        damping_ratio
+      }
+      when is_number(damping_ratio) and damping_ratio >= 0 ->
+        strain_energy =
+          distortion
+          |> Tensorex.Operator.multiply(stiffness, [{0, 0}])
+          |> Tensorex.Operator.multiply(distortion, [{0, 0}])
+
+        {strain_energy * damping_ratio, strain_energy}
+    end)
+    |> Enum.unzip()
+    |> Tuple.to_list()
+    |> Stream.map(&Enum.sum/1)
+    |> Enum.reduce(&(&2 / &1))
   end
 end
