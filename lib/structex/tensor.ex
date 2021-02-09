@@ -546,7 +546,10 @@ defmodule Structex.Tensor do
     new(order)
   end
 
-  def delete_key(%Structex.Tensor{tensor: %Tensorex{shape: shape} = tensor, index: index} = t, key)
+  def delete_key(
+        %Structex.Tensor{tensor: %Tensorex{shape: shape} = tensor, index: index} = t,
+        key
+      )
       when is_map_key(index, key) do
     case Map.pop(index, key) do
       {{nil, [], _}, new_index} ->
@@ -584,7 +587,8 @@ defmodule Structex.Tensor do
     end
   end
 
-  def delete_key(%Structex.Tensor{index: index} = t, key), do: %{t | index: Map.delete(index, key)}
+  def delete_key(%Structex.Tensor{index: index} = t, key),
+    do: %{t | index: Map.delete(index, key)}
 
   @spec shift_index({term, {non_neg_integer, [Range.t()], pos_integer}}, integer, non_neg_integer) ::
           {term, {non_neg_integer, [Range.t()], pos_integer}}
@@ -716,7 +720,60 @@ defmodule Structex.Tensor do
                                                                                                                                                    [10, 9] => 44, [10, 10] => 45, [10, 11] => 46,
                                                                                                                                                    [11, 9] => 47, [11, 10] => 48, [11, 11] => 49}, shape: [12, 12]}
   """
-  @spec assembled(Structex.Tensor.t()) :: Tensorex.t()
+  @spec assembled(t) :: Tensorex.t()
   def assembled(%Structex.Tensor{tensor: %Tensorex{} = tensor}), do: tensor
   def assembled(%Structex.Tensor{}), do: nil
+
+  @doc """
+  Overwrites the whole assembled tensor by the given tensor.
+
+      iex> Structex.Tensor.new(2)
+      ...> |> Structex.Tensor.put_key(:a, [:free, :free])
+      ...> |> Structex.Tensor.put_key(:b, [:free, :free])
+      ...> |> Structex.Tensor.put_assembled(Tensorex.from_list([[ 1,  2,  3,  4],
+      ...>                                               [ 5,  6,  7,  8],
+      ...>                                               [ 9, 10, 11, 12],
+      ...>                                               [13, 14, 15, 16]]))
+      ...> |> get_in([[:a, :a]])
+      %Tensorex{data: %{[0, 0] => 1, [0, 1] => 2,
+                        [1, 0] => 5, [1, 1] => 6}, shape: [2, 2]}
+
+      iex> Structex.Tensor.new(2)
+      ...> |> Structex.Tensor.put_key(:a, [:free, :free])
+      ...> |> Structex.Tensor.put_key(:b, [:free, :free])
+      ...> |> Structex.Tensor.put_assembled(Tensorex.from_list([[ 1,  2,  3,  4],
+      ...>                                               [ 5,  6,  7,  8],
+      ...>                                               [ 9, 10, 11, 12],
+      ...>                                               [13, 14, 15, 16]]))
+      ...> |> get_in([[:a, :b]])
+      %Tensorex{data: %{[0, 0] => 3, [0, 1] => 4,
+                        [1, 0] => 7, [1, 1] => 8}, shape: [2, 2]}
+  """
+  @spec put_assembled(t, Tensorex.t()) :: t
+  def put_assembled(
+        %Structex.Tensor{tensor: %Tensorex{shape: shape}} = t,
+        %Tensorex{shape: shape} = tensor
+      ) do
+    %{t | tensor: tensor}
+  end
+
+  @doc """
+  Updates the whole assembled tensor by the given function.
+
+      iex> Structex.Tensor.new(2)
+      ...> |> Structex.Tensor.put_key(:a, [:free, :free])
+      ...> |> Structex.Tensor.put_key(:b, [:free, :free])
+      ...> |> put_in([[:a, :a]], Tensorex.from_list([[ 1,  2], [ 3,  4]]))
+      ...> |> put_in([[:b, :b]], Tensorex.from_list([[11, 12], [13, 14]]))
+      ...> |> Structex.Tensor.update_assembled(&Tensorex.Operator.negate/1)
+      ...> |> get_in([[:a, :a]])
+      %Tensorex{data: %{[0, 0] => -1, [0, 1] => -2,
+                        [1, 0] => -3, [1, 1] => -4}, shape: [2, 2]}
+  """
+  @spec update_assembled(t, (Tensorex.t() -> Tensorex.t())) :: t
+  def update_assembled(%Structex.Tensor{tensor: %Tensorex{shape: shape} = tensor} = t, update_fun)
+      when is_function(update_fun, 1) do
+    %Tensorex{shape: ^shape} = updated = update_fun.(tensor)
+    %{t | tensor: updated}
+  end
 end
