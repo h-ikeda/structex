@@ -33,10 +33,10 @@ defmodule Structex.Modal do
   Returns a vector of participation factors.
 
       iex> Structex.Modal.participation_factors(Tensorex.from_list([[ 0.8497907788067889,  0.39796814317351187],
-      ...>                                                    [-0.5271201307623825,  0.9173992353490529 ]]),
-      ...>                                Tensorex.from_list([[15.3               ,  0                  ],
-      ...>                                                    [ 0                 , 10.7                ]]),
-      ...>                                Tensorex.from_list([15.3, 10.7]))
+      ...>                                                          [-0.5271201307623825,  0.9173992353490529 ]]),
+      ...>                                      Tensorex.from_list([[15.3               ,  0                  ],
+      ...>                                                          [ 0                 , 10.7                ]]),
+      ...>                                      Tensorex.from_list([15.3, 10.7]))
       %Tensorex{data: %{[0] => 0.5250096184416861, [1] => 1.3916984988969536}, shape: [2]}
   """
   @spec participation_factors(Tensorex.t(), Tensorex.t(), Tensorex.t()) :: Tensorex.t()
@@ -61,9 +61,9 @@ defmodule Structex.Modal do
   corresponding 1-degree motion equation and the normal mode matrix:
 
       iex> Structex.Modal.superimpose(Tensorex.from_list([2.5, 1.3, 3.2]), :direct,
-      ...>                      Tensorex.from_list([[0.423333756667,  0.727392967453 , 0.558145572185],
-      ...>                                          [0.550333883667, -0.363696483726, -0.558145572185],
-      ...>                                          [0.719667386334, -0.581914373962,  0.613960129404]]))
+      ...>                            Tensorex.from_list([[0.423333756667,  0.727392967453 , 0.558145572185],
+      ...>                                                [0.550333883667, -0.363696483726, -0.558145572185],
+      ...>                                                [0.719667386334, -0.581914373962,  0.613960129404]]))
       %Tensorex{data: %{[0] =>  3.7900110803484006,
                         [1] => -0.8830365506683002,
                         [2] =>  3.0073521937772   }, shape: [3]}
@@ -75,9 +75,9 @@ defmodule Structex.Modal do
   each element is the maximum response of 1-degree vibration model and the normal mode matrix:
 
       iex> Structex.Modal.superimpose(Tensorex.from_list([2.5, 1.3, 3.2]), :srss,
-      ...>                      Tensorex.from_list([[0.423333756667,  0.727392967453 , 0.558145572185],
-      ...>                                          [0.550333883667, -0.363696483726, -0.558145572185],
-      ...>                                          [0.719667386334, -0.581914373962,  0.613960129404]]))
+      ...>                            Tensorex.from_list([[0.423333756667,  0.727392967453 , 0.558145572185],
+      ...>                                                [0.550333883667, -0.363696483726, -0.558145572185],
+      ...>                                                [0.719667386334, -0.581914373962,  0.613960129404]]))
       %Tensorex{data: %{[0] => 2.2812897079070202,
                         [1] => 2.3035835719876396,
                         [2] => 2.7693356595808605}, shape: [3]}
@@ -90,12 +90,12 @@ defmodule Structex.Modal do
   mode correlation coefficient matrix:
 
       iex> Structex.Modal.superimpose(Tensorex.from_list([2.5, 1.3, 3.2]), :cqc,
-      ...>                      Tensorex.from_list([[0.423333756667,  0.727392967453 , 0.558145572185],
-      ...>                                          [0.550333883667, -0.363696483726, -0.558145572185],
-      ...>                                          [0.719667386334, -0.581914373962,  0.613960129404]]),
-      ...>                      Tensorex.from_list([[1  , 0.5, 0.05],
-      ...>                                          [0.4, 1  , 0.2 ],
-      ...>                                          [0.1, 0.2, 1   ]]))
+      ...>                            Tensorex.from_list([[0.423333756667,  0.727392967453 , 0.558145572185],
+      ...>                                                [0.550333883667, -0.363696483726, -0.558145572185],
+      ...>                                                [0.719667386334, -0.581914373962,  0.613960129404]]),
+      ...>                            Tensorex.from_list([[1  , 0.5, 0.05],
+      ...>                                                [0.4, 1  , 0.2 ],
+      ...>                                                [0.1, 0.2, 1   ]]))
       %Tensorex{data: %{[0] => 2.657834740006921 ,
                         [1] => 2.165693955620106 ,
                         [2] => 2.5258642049998965}, shape: [3]}
@@ -160,9 +160,9 @@ defmodule Structex.Modal do
   and damping factor.
 
       iex> Structex.Modal.mode_correlation_coefficients(Tensorex.from_list([[0.3 , 0   ],
-      ...>                                                            [0   , 1   ]]),
-      ...>                                        Tensorex.from_list([[0.05, 0   ],
-      ...>                                                            [0   , 0.11]]))
+      ...>                                                                  [0   , 1   ]]),
+      ...>                                              Tensorex.from_list([[0.05, 0   ],
+      ...>                                                                  [0   , 0.11]]))
       %Tensorex{data: %{[0, 0] => 1                , [0, 1] => 0.016104174049193782,
                         [1, 0] => 0.143086511954331, [1, 1] => 1                   }, shape: [2, 2]}
   """
@@ -189,26 +189,26 @@ defmodule Structex.Modal do
   Calculates the maximum response distortion of the vibration model from the acceleration spectrum.
 
       iex> Structex.Modal.linear_modal_response(Tensorex.from_list([[   20.4,     0  ],
-      ...>                                                    [    0  ,    10.2]]),
-      ...>                                Tensorex.from_list([[  302.408,  -244.747],
-      ...>                                                    [ -244.747,   244.747]]),
-      ...>                                Tensorex.from_list([[ 4332  , -3506  ],
-      ...>                                                    [-3506  ,  3506  ]]),
-      ...>                                Tensorex.from_list([20.4, 10.2]),
-      ...>                                fn t, h -> 1.024 / t * 2.025 * 1.5 / (1 + 10 * h) * 0.85 end,
-      ...>                                :cqc)
+      ...>                                                          [    0  ,    10.2]]),
+      ...>                                      Tensorex.from_list([[  302.408,  -244.747],
+      ...>                                                          [ -244.747,   244.747]]),
+      ...>                                      Tensorex.from_list([[ 4332  , -3506  ],
+      ...>                                                          [-3506  ,  3506  ]]),
+      ...>                                      Tensorex.from_list([20.4, 10.2]),
+      ...>                                      fn t, h -> 1.024 / t * 2.025 * 1.5 / (1 + 10 * h) * 0.85 end,
+      ...>                                      :cqc)
       %Tensorex{data: %{[0] => 0.028620536343935302,
                         [1] => 0.03094604399656699 }, shape: [2]}
 
       iex> Structex.Modal.linear_modal_response(Tensorex.from_list([[   20.4,     0  ],
-      ...>                                                    [    0  ,    10.2]]),
-      ...>                                Tensorex.from_list([[  302.408,  -244.747],
-      ...>                                                    [ -244.747,   244.747]]),
-      ...>                                Tensorex.from_list([[ 4332  , -3506  ],
-      ...>                                                    [-3506  ,  3506  ]]),
-      ...>                                Tensorex.from_list([20.4, 10.2]),
-      ...>                                fn t, h -> 1.024 / t * 2.025 * 1.5 / (1 + 10 * h) * 0.85 end,
-      ...>                                :srss)
+      ...>                                                          [    0  ,    10.2]]),
+      ...>                                      Tensorex.from_list([[  302.408,  -244.747],
+      ...>                                                          [ -244.747,   244.747]]),
+      ...>                                      Tensorex.from_list([[ 4332  , -3506  ],
+      ...>                                                          [-3506  ,  3506  ]]),
+      ...>                                      Tensorex.from_list([20.4, 10.2]),
+      ...>                                      fn t, h -> 1.024 / t * 2.025 * 1.5 / (1 + 10 * h) * 0.85 end,
+      ...>                                      :srss)
       %Tensorex{data: %{[0] => 0.028605899694462523,
                         [1] => 0.030973098740797646}, shape: [2]}
   """
@@ -323,7 +323,7 @@ defmodule Structex.Modal do
   """
   @spec strain_energy_propotional_damping(Enum.t()) :: number
   def strain_energy_propotional_damping(enumerable) do
-    enumerable
+      enumerable
     |> Stream.map(fn
       {
         %Tensorex{shape: [degrees, degrees]} = stiffness,
@@ -337,8 +337,8 @@ defmodule Structex.Modal do
           |> Tensorex.Operator.multiply(distortion, [{0, 0}])
 
         {strain_energy * damping_ratio, strain_energy}
-    end)
-    |> Enum.unzip()
+      end)
+      |> Enum.unzip()
     |> Tuple.to_list()
     |> Stream.map(&Enum.sum/1)
     |> Enum.reduce(&(&2 / &1))
