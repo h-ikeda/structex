@@ -1,8 +1,6 @@
 defprotocol Structex.Hysteresis do
-  @spec skeleton(t, Tensorex.t()) :: Tensorex.t()
-  def skeleton(hysteresis, distortion)
-  @spec equivalent_stiffness(t, Tensorex.t()) :: Tensorex.t()
+  @spec equivalent_stiffness(t, number) :: number
   def equivalent_stiffness(hysteresis, distortion)
-  @spec equivalent_damping_ratio(t, Tensorex.t()) :: number
+  @spec equivalent_damping_ratio(t, number) :: number
   def equivalent_damping_ratio(hysteresis, distortion)
 end
