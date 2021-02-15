@@ -128,8 +128,8 @@ defmodule Structex.Tensor do
       when is_list(keys) and length(keys) === length(shape) do
     try do
       {ranges, new_shape} = ranges_and_shape(index, keys)
-      new_tensor = permutation(ranges) |> put_left_to_right(tensor, Tensorex.zero(new_shape))
-      {:ok, new_tensor}
+      value = paired_permutation(ranges) |> put_left_to_right(tensor, Tensorex.zero(new_shape))
+      {:ok, value}
     rescue
       KeyError -> :error
     end
@@ -263,7 +263,7 @@ defmodule Structex.Tensor do
       )
       when is_list(keys) and length(shape) === length(keys) do
     {conversion_ranges, new_shape} = ranges_and_shape(index, keys)
-    conversion_indices = permutation(conversion_ranges) |> Enum.to_list()
+    conversion_indices = paired_permutation(conversion_ranges) |> Enum.to_list()
     value = conversion_indices |> put_left_to_right(tensor, Tensorex.zero(new_shape))
 
     case fun.(value) do
@@ -308,8 +308,8 @@ defmodule Structex.Tensor do
     |> Enum.unzip()
   end
 
-  @spec permutation(Enum.t()) :: Enum.t()
-  defp permutation(enumerable_of_range_pairs) do
+  @spec paired_permutation(Enum.t()) :: Enum.t()
+  defp paired_permutation(enumerable_of_range_pairs) do
     Enum.reduce(enumerable_of_range_pairs, [{[], []}], fn range_pairs, acc ->
       Stream.map(range_pairs, fn {left, right} ->
         Stream.map(acc, fn {prev_left, prev_right} ->
@@ -386,7 +386,7 @@ defmodule Structex.Tensor do
   def pop(%Structex.Tensor{tensor: %Tensorex{shape: shape} = tensor, index: index} = t, keys)
       when is_list(keys) and length(keys) === length(shape) do
     {conversion_ranges, new_shape} = ranges_and_shape(index, keys)
-    conversion_indices = permutation(conversion_ranges) |> Enum.to_list()
+    conversion_indices = paired_permutation(conversion_ranges) |> Enum.to_list()
     value = conversion_indices |> put_left_to_right(tensor, Tensorex.zero(new_shape))
 
     new_tensor =
@@ -578,7 +578,7 @@ defmodule Structex.Tensor do
 
                 Stream.cycle([[bf, af]])
                 |> Stream.take(length(shape))
-                |> permutation()
+                |> paired_permutation()
                 |> put_left_to_right(tensor, Tensorex.zero(new_shape))
             end
 
@@ -775,5 +775,135 @@ defmodule Structex.Tensor do
       when is_function(update_fun, 1) do
     %Tensorex{shape: ^shape} = updated = update_fun.(tensor)
     %{t | tensor: updated}
+  end
+
+  @doc """
+  Merges two tensor into one.
+
+  `tensor1` must have keys existing in `tensor2`. `merge_function` will be invoked with three
+  arguments, keys to be merged, the value of `tensor1` and the value of `tensor2`.
+
+      iex> Structex.Tensor.merge(
+      ...>   Structex.Tensor.new(2)
+      ...>   |> Structex.Tensor.put_key(:a, [:free, :free ])
+      ...>   |> Structex.Tensor.put_key(:b, [:free, :fixed])
+      ...>   |> Structex.Tensor.put_key(:c, [:free, :free ])
+      ...>   |> put_in([[:a, :a]], Tensorex.from_list([[1, 2], [3, 4]]))
+      ...>   |> put_in([[:a, :b]], Tensorex.from_list([[5, 6], [7, 8]]))
+      ...>   |> put_in([[:a, :c]], Tensorex.from_list([[9, 10], [11, 12]]))
+      ...>   |> put_in([[:b, :a]], Tensorex.from_list([[13, 14], [15, 16]]))
+      ...>   |> put_in([[:b, :b]], Tensorex.from_list([[17, 18], [19, 20]]))
+      ...>   |> put_in([[:b, :c]], Tensorex.from_list([[21, 22], [23, 24]]))
+      ...>   |> put_in([[:c, :a]], Tensorex.from_list([[25, 26], [27, 28]]))
+      ...>   |> put_in([[:c, :b]], Tensorex.from_list([[29, 30], [31, 32]]))
+      ...>   |> put_in([[:c, :c]], Tensorex.from_list([[33, 34], [35, 36]])),
+      ...>   Structex.Tensor.new(2)
+      ...>   |> Structex.Tensor.put_key(:a, [:free, :free])
+      ...>   |> Structex.Tensor.put_key(:c, [:free, :free])
+      ...>   |> put_in([[:a, :a]], Tensorex.from_list([[-2, -3], [-4, -5]]))
+      ...>   |> put_in([[:a, :c]], Tensorex.from_list([[-6, -7], [-8, -9]]))
+      ...>   |> put_in([[:c, :c]], Tensorex.from_list([[-4, -5], [-6, -7]])),
+      ...>   fn _, tensor1, tensor2 -> Tensorex.Operator.add(tensor1, tensor2) end
+      ...> )
+      ...> |> Structex.Tensor.assembled()
+      %Tensorex{data: %{[0, 0] => -1, [0, 1] => -1, [0, 2] =>  5, [0, 3] =>  3, [0, 4] =>  3,
+                        [1, 0] => -1, [1, 1] => -1, [1, 2] =>  7, [1, 3] =>  3, [1, 4] =>  3,
+                        [2, 0] => 13, [2, 1] => 14, [2, 2] => 17, [2, 3] => 21, [2, 4] => 22,
+                        [3, 0] => 25, [3, 1] => 26, [3, 2] => 29, [3, 3] => 29, [3, 4] => 29,
+                        [4, 0] => 27, [4, 1] => 28, [4, 2] => 31, [4, 3] => 29, [4, 4] => 29}, shape: [5, 5]}
+
+      iex> Structex.Tensor.merge(
+      ...>   Structex.Tensor.new(2)
+      ...>   |> Structex.Tensor.put_key(:a, [:free, :free ])
+      ...>   |> Structex.Tensor.put_key(:b, [:free, :fixed])
+      ...>   |> Structex.Tensor.put_key(:c, [:free, :free ])
+      ...>   |> put_in([[:a, :a]], Tensorex.from_list([[1, 2], [3, 4]]))
+      ...>   |> put_in([[:a, :b]], Tensorex.from_list([[5, 6], [7, 8]]))
+      ...>   |> put_in([[:a, :c]], Tensorex.from_list([[9, 10], [11, 12]]))
+      ...>   |> put_in([[:b, :a]], Tensorex.from_list([[13, 14], [15, 16]]))
+      ...>   |> put_in([[:b, :b]], Tensorex.from_list([[17, 18], [19, 20]]))
+      ...>   |> put_in([[:b, :c]], Tensorex.from_list([[21, 22], [23, 24]]))
+      ...>   |> put_in([[:c, :a]], Tensorex.from_list([[25, 26], [27, 28]]))
+      ...>   |> put_in([[:c, :b]], Tensorex.from_list([[29, 30], [31, 32]]))
+      ...>   |> put_in([[:c, :c]], Tensorex.from_list([[33, 34], [35, 36]])),
+      ...>   Structex.Tensor.new(2)
+      ...>   |> Structex.Tensor.put_key(:a, [:fixed, :fixed])
+      ...>   |> Structex.Tensor.put_key(:c, [:fixed, :fixed]),
+      ...>   fn _, tensor1, tensor2 -> Tensorex.Operator.add(tensor1, tensor2) end
+      ...> )
+      ...> |> Structex.Tensor.assembled()
+      %Tensorex{data: %{[0, 0] =>  1, [0, 1] =>  2, [0, 2] =>  5, [0, 3] =>  9, [0, 4] => 10,
+                        [1, 0] =>  3, [1, 1] =>  4, [1, 2] =>  7, [1, 3] => 11, [1, 4] => 12,
+                        [2, 0] => 13, [2, 1] => 14, [2, 2] => 17, [2, 3] => 21, [2, 4] => 22,
+                        [3, 0] => 25, [3, 1] => 26, [3, 2] => 29, [3, 3] => 33, [3, 4] => 34,
+                        [4, 0] => 27, [4, 1] => 28, [4, 2] => 31, [4, 3] => 35, [4, 4] => 36}, shape: [5, 5]}
+
+      iex> Structex.Tensor.merge(
+      ...>   Structex.Tensor.new(2)
+      ...>   |> Structex.Tensor.put_key(:a, [:fixed, :fixed])
+      ...>   |> Structex.Tensor.put_key(:b, [:fixed, :fixed])
+      ...>   |> Structex.Tensor.put_key(:c, [:fixed, :fixed]),
+      ...>   Structex.Tensor.new(2)
+      ...>   |> Structex.Tensor.put_key(:a, [:free, :free])
+      ...>   |> Structex.Tensor.put_key(:c, [:free, :free])
+      ...>   |> put_in([[:a, :a]], Tensorex.from_list([[-2, -3], [-4, -5]]))
+      ...>   |> put_in([[:a, :c]], Tensorex.from_list([[-6, -7], [-8, -9]]))
+      ...>   |> put_in([[:c, :c]], Tensorex.from_list([[-4, -5], [-6, -7]])),
+      ...>   fn _, tensor1, tensor2 -> Tensorex.Operator.add(tensor1, tensor2) end
+      ...> )
+      ...> |> Structex.Tensor.assembled()
+      nil
+  """
+  @spec merge(t, t, ([...], Tensorex.t(), Tensorex.t() -> Tensorex.t())) :: t
+  def merge(
+        %Structex.Tensor{tensor: %Tensorex{shape: shape1}} = tensor1,
+        %Structex.Tensor{tensor: %Tensorex{shape: shape2}} = tensor2,
+        merge_function
+      )
+      when length(shape1) === length(shape2) and is_function(merge_function, 3) do
+    do_merge(tensor1, tensor2, length(shape1), merge_function)
+  end
+
+  def merge(
+        %Structex.Tensor{tensor: order} = tensor1,
+        %Structex.Tensor{tensor: %Tensorex{shape: shape}} = tensor2,
+        merge_function
+      )
+      when order === length(shape) and is_function(merge_function, 3) do
+    do_merge(tensor1, tensor2, order, merge_function)
+  end
+
+  def merge(
+        %Structex.Tensor{tensor: %Tensorex{shape: shape}} = tensor1,
+        %Structex.Tensor{tensor: order} = tensor2,
+        merge_function
+      )
+      when length(shape) === order and is_function(merge_function, 3) do
+    do_merge(tensor1, tensor2, order, merge_function)
+  end
+
+  def merge(
+        %Structex.Tensor{tensor: order} = tensor1,
+        %Structex.Tensor{tensor: order} = tensor2,
+        merge_function
+      )
+      when is_function(merge_function, 3) do
+    do_merge(tensor1, tensor2, order, merge_function)
+  end
+
+  defp do_merge(tensor1, tensor2, order, fun) do
+    Map.keys(tensor2.index)
+    |> permutation(order)
+    |> Enum.reduce(tensor1, fn keys, acc ->
+      update_in(acc[keys], &fun.(keys, &1, tensor2[keys]))
+    end)
+  end
+
+  @spec permutation(Enum.t(), pos_integer) :: Enum.t()
+  defp permutation(enumerable, select_num) do
+    List.duplicate(enumerable, select_num)
+    |> Enum.reduce([[]], fn keys, acc ->
+      Stream.map(keys, fn key -> Stream.map(acc, &[key | &1]) end) |> Stream.concat()
+    end)
   end
 end
