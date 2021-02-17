@@ -310,37 +310,31 @@ defmodule Structex.Modal do
   end
 
   @doc """
-  Calculates a modal damping ratio by the strain energy propotional method.
+  Calculates a weighted average by the strain energy.
 
-  The argument must be an enumerable of three-element tuples containing an element's stiffness
-  matrix, an element's distortion vector and an element's damping ratio.
+  The argument must be an enumerable of three-element tuples each containing an element's stiffness
+  matrix, an element's distortion vector and the value to be averaged.
 
-      iex> Structex.Modal.strain_energy_propotional_damping([
+      iex> Structex.Modal.strain_energy_weighted_average([
       ...>   {Tensorex.from_list([[0.8, -0.8], [-0.8, 0.8]]), Tensorex.from_list([0.5, 0.8]), 0.08},
       ...>   {Tensorex.from_list([[1.2, -1.2], [-1.2, 1.2]]), Tensorex.from_list([0.8, 1.0]), 0.12}
       ...> ])
       0.096
   """
-  @spec strain_energy_propotional_damping(Enum.t()) :: number
-  def strain_energy_propotional_damping(enumerable) do
+  @spec strain_energy_weighted_average(Enum.t()) :: number
+  def strain_energy_weighted_average(enumerable) do
+    {weighted, strain_energies} =
       enumerable
-    |> Stream.map(fn
-      {
-        %Tensorex{shape: [degrees, degrees]} = stiffness,
-        %Tensorex{shape: [degrees]} = distortion,
-        damping_ratio
-      }
-      when is_number(damping_ratio) and damping_ratio >= 0 ->
+      |> Stream.map(fn {stiffness, distortion, value} when is_number(value) and value >= 0 ->
         strain_energy =
           distortion
           |> Tensorex.Operator.multiply(stiffness, [{0, 0}])
           |> Tensorex.Operator.multiply(distortion, [{0, 0}])
 
-        {strain_energy * damping_ratio, strain_energy}
+        {strain_energy * value, strain_energy}
       end)
       |> Enum.unzip()
-    |> Tuple.to_list()
-    |> Stream.map(&Enum.sum/1)
-    |> Enum.reduce(&(&2 / &1))
+
+    Enum.sum(weighted) / Enum.sum(strain_energies)
   end
 end
