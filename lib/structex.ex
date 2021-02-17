@@ -1,4 +1,118 @@
 defmodule Structex do
+  @moduledoc """
+  ## Calculation of response and limit strength
+
+      iex> matrix =
+      ...>   Structex.Tensor.new(2)
+      ...>   |> Structex.Tensor.put_key(:ground, [:fixed])
+      ...>   |> Structex.Tensor.put_key(:second_floor, [:free])
+      ...>   |> Structex.Tensor.put_key(:roof, [:free])
+      ...>
+      ...> vector =
+      ...>   Structex.Tensor.new(1)
+      ...>   |> Structex.Tensor.put_key(:ground, [:fixed])
+      ...>   |> Structex.Tensor.put_key(:second_floor, [:free])
+      ...>   |> Structex.Tensor.put_key(:roof, [:free])
+      ...>
+      ...> mass =
+      ...>   matrix
+      ...>   |> put_in(
+      ...>     [[:second_floor, :second_floor]],
+      ...>     Tensorex.kronecker_delta(1) |> Tensorex.Operator.multiply(20.4)
+      ...>   )
+      ...>   |> put_in(
+      ...>     [[:roof, :roof]],
+      ...>     Tensorex.kronecker_delta(1) |> Tensorex.Operator.multiply(10.2)
+      ...>   )
+      ...>   |> Structex.Tensor.assembled()
+      ...>
+      ...> elements =
+      ...>   List.duplicate({[:ground, :second_floor], %Structex.Element.Spring{constant: } Structex.Hysteresis.MudPlasterWall.new(2.7, 2.4, 1.7, 0.06)}, 9) ++
+      ...>     List.duplicate({[:ground, :second_floor], Structex.Hysteresis.MudPlasterWall.new(2.7, 2.4, 1.23, 0.055)}, 7) ++
+      ...>     List.duplicate({[:second_floor, :roof], Structex.Hysteresis.MudPlasterWall.new(2.9, 2.6, 1.7, 0.06)}, 5) ++
+      ...>     List.duplicate({[:second_floor, :roof], Structex.Hysteresis.MudPlasterWall.new(2.9, 2.6, 1.23, 0.055)}, 4)
+      ...>
+      ...> equivalent_linear_model =
+      ...>   fn distortion ->
+      ...>     d = Structex.Tensor.put_assembled(vector, distortion)
+      ...>
+      ...>     stiffness =
+      ...>       hysteresis
+      ...>       |> Stream.map(fn {[index1, index2] = index, model} ->
+      ...>         diff = d[[index2]] |> Tensorex.Operator.subtract(d[[index1]])
+      ...>         Structex.Element.equivalent_stiffness(model, index, diff)
+      ...>       end)
+      ...>       |> Enum.reduce(matrix, fn tensor, acc ->
+      ...>         Structex.Tensor.merge(acc, &Tensorex.Operator.add(&1, tensor))
+      ...>       end)
+      ...>       |> Structex.Tensor.assembled()
+      ...>
+      ...>     {%Tensorex{shape: [degrees | _]} = natural_angular_frequencies, normal_mode_vectors} =
+      ...>       Structex.Modal.normal_modes(mass, stiffness)
+      ...>
+      ...>     {natural_angular_frequency, mode_index} =
+      ...>       0..(degrees - 1)
+      ...>       |> Stream.map(&{natural_angular_frequencies[[&1, &1]], &1})
+      ...>       |> Enum.min_by(&elem(&1, 0))
+      ...>
+      ...>     damping_ratio1 =
+      ...>       Structex.Modal.strain_energy_propotional_damping(dx1)
+      ...>       Structex.Model.equivalent_damping_ratio(
+      ...>         dx1,
+      ...>         skeleton1
+      ...>       )
+      ...>
+      ...>     damping_ratio2 =
+      ...>       Structex.Model.equivalent_damping_ratio(
+      ...>         dx2,
+      ...>         skeleton2
+      ...>       )
+      ...>
+      ...>     damping_ratio = 0.2
+      ...>
+      ...>     damping =
+      ...>       Structex.Modal.stiffness_propotional_damping(
+      ...>         stiffness,
+      ...>         natural_angular_frequency,
+      ...>         damping_ratio
+      ...>       )
+      ...>
+      ...>     {mass, damping, stiffness}
+      ...>   end
+      ...>
+      ...> acceleration_response_spectrum =
+      ...>   Stream.iterate(0.05, &(&1 * 1.1))
+      ...>   |> Stream.take_while(&(&1 <= 8))
+      ...>   |> Enum.map(fn natural_period ->
+      ...>     {
+      ...>       natural_period,
+      ...>       Structex.Load.Seismic.standard_maximum_acceleration(137.166296, 34.910602, 250) *
+      ...>         Structex.Load.Seismic.normalized_acceleration_response_spectrum(2.5, 0.16, 0.64).(natural_period)
+      ...>     }
+      ...>   end)
+      ...>   |> Structex.Load.Seismic.reverse_convert_spectrum(0.5, 20, 0.05)
+      ...>   |> Enum.map(fn {angular_frequency, ga0} ->
+      ...>     hgs = Structex.Load.Seismic.squared_soil_amplification(angular_frequency, 0.56, 0.05, 0.2)
+      ...>     {angular_frequency, hgs * ga0}
+      ...>   end)
+      ...>   |> Structex.Load.Seismic.convert_spectrum(0.5, 20, 3)
+      ...>
+      ...> response =
+      ...>   Structex.limit_strength_response(
+      ...>     equivalent_linear_model,
+      ...>     Structex.Tensor.assebled(vector),
+      ...>     acceleration_response_spectrum,
+      ...>     :srss
+      ...>   )
+      ...>
+      ...> [:ground, :second_floor, :roof]
+      ...> |> Enum.map(&{&1, Structex.Tensor.put_assembled(vector, response)[[&1]]})
+      [
+        ground:       %Tensorex{data: %{},         shape: [1]},
+        second_floor: %Tensorex{data: [0] => 0.0}, shape: [1]},
+        roof:         %Tensorex{data: [0] => 0.0}, shape: [1]}
+      ]
+  """
   @doc """
   Calculates expected distortion response by equivalent linearization.
 
@@ -61,147 +175,6 @@ defmodule Structex do
     else
       limit_strength_response(model, response, acceleration_spectrum, superimpose_method)
     end
-  end
-
-  @doc """
-  Composes each matrix of the element into a system matrix.
-
-  The first argument must be a list of two-element tuple where the first element is a 2-dimension
-  list of matrices (2-rank `t:Tensorex.t/0`) and the second one is a list of node identifiers. The
-  matrices at the same node identifier will be sumed up.
-
-  If the second argument is passed, the element order respects what range to be used for each node
-  identifier.
-
-      iex> Structex.compose([
-      ...>   {[[Tensorex.from_list([[10, 0], [0, 10]])]], [0]},
-      ...>   {[[Tensorex.from_list([[ 5, 0], [0,  5]])]], [1]}
-      ...> ])
-      {
-        %Tensorex{data: %{[0, 0] => 10,
-                                        [1, 1] => 10,
-                                                      [2, 2] => 5,
-                                                                   [3, 3] => 5}, shape: [4, 4]},
-        %{0 => 0..1, 1 => 2..3}
-      }
-
-      iex> Structex.compose([
-      ...>   {
-      ...>     [[Tensorex.from_list([[32.1, 0], [0, 42.1]]), Tensorex.from_list([[-32.1, 0], [0, -42.1]])], [Tensorex.from_list([[-32.1, 0], [0, -42.1]]), Tensorex.from_list([[32.1, 0], [0, 42.1]])]],
-      ...>     [0, 1]
-      ...>   },
-      ...>   {
-      ...>     [[Tensorex.from_list([[24  , 0], [0, 14  ]]), Tensorex.from_list([[-24  , 0], [0, -14  ]])], [Tensorex.from_list([[-24  , 0], [0, -14  ]]), Tensorex.from_list([[24  , 0], [0, 14  ]])]],
-      ...>     [1, 2]
-      ...>   },
-      ...>   {
-      ...>     [[Tensorex.from_list([[63.1, 0], [0, 55.3]])]],
-      ...>     [0]
-      ...>   }
-      ...> ])
-      {
-        %Tensorex{data: %{[0, 0] =>  95.2,                  [0, 2] => -32.1,
-                                           [1, 1] =>  97.4,                  [1, 3] => -42.1,
-                          [2, 0] => -32.1,                  [2, 2] =>  56.1,                  [2, 4] => -24,
-                                           [3, 1] => -42.1,                  [3, 3] =>  56.1,                [3, 5] => -14,
-                                                            [4, 2] => -24  ,                  [4, 4] =>  24,
-                                                                             [5, 3] => -14  ,                [5, 5] =>  14}, shape: [6, 6]},
-        %{0 => 0..1, 1 => 2..3, 2 => 4..5}
-      }
-
-      iex> Structex.compose([
-      ...>   {
-      ...>     [[Tensorex.from_list([[32.1, 0], [0, 42.1]]), Tensorex.from_list([[-32.1, 0], [0, -42.1]])], [Tensorex.from_list([[-32.1, 0], [0, -42.1]]), Tensorex.from_list([[32.1, 0], [0, 42.1]])]],
-      ...>     [0, 1]
-      ...>   },
-      ...>   {
-      ...>     [[Tensorex.from_list([[24  , 0], [0, 14  ]]), Tensorex.from_list([[-24  , 0], [0, -14  ]])], [Tensorex.from_list([[-24  , 0], [0, -14  ]]), Tensorex.from_list([[24  , 0], [0, 14  ]])]],
-      ...>     [1, 2]
-      ...>   },
-      ...>   {
-      ...>     [[Tensorex.from_list([[ 5  , 0], [0,  8  ]]), Tensorex.from_list([[ -5  , 0], [0,  -8  ]])], [Tensorex.from_list([[ -5  , 0], [0,  -8  ]]), Tensorex.from_list([[ 5  , 0], [0,  8  ]])]],
-      ...>     [3, 2]
-      ...>   },
-      ...>   {
-      ...>     [[Tensorex.from_list([[ 3.9, 0], [0,  6.5]]), Tensorex.from_list([[ -3.9, 0], [0,  -6.5]])], [Tensorex.from_list([[ -3.9, 0], [0,  -6.5]]), Tensorex.from_list([[ 3.9, 0], [0,  6.5]])]],
-      ...>     [4, 5]
-      ...>   },
-      ...>   {
-      ...>     [[Tensorex.from_list([[63.1, 0], [0, 55.3]])]],
-      ...>     [0]
-      ...>   }
-      ...> ], %{1 => 0..1, 2 => 2..3})
-      {
-        %Tensorex{data: %{[0, 0] =>  56.1,                  [0, 2] => -24,                [0, 4] => -32.1,
-                                           [1, 1] =>  56.1,                [1, 3] => -14,                  [1, 5] => -42.1,
-                          [2, 0] => -24  ,                  [2, 2] =>  29,                                                  [2, 6] => -5,
-                                           [3, 1] => -14  ,                [3, 3] =>  22,                                                 [3, 7] => -8,
-                          [4, 0] => -32.1,                                                [4, 4] =>  95.2,
-                                           [5, 1] => -42.1,                                                [5, 5] =>  97.4,
-                                                            [6, 2] =>  -5,                                                  [6, 6] =>  5,
-                                                                           [7, 3] =>  -8,                                                 [7, 7] =>  8,
-                                                                                                                                                        [ 8, 8] =>  3.9,                  [ 8, 10] => -3.9,
-                                                                                                                                                                         [ 9, 9] =>  6.5,                   [ 9, 11] => -6.5,
-                                                                                                                                                        [10, 8] => -3.9,                  [10, 10] =>  3.9,
-                                                                                                                                                                         [11, 9] => -6.5,                   [11, 11] =>  6.5}, shape: [12, 12]},
-        %{0 => 4..5, 1 => 0..1, 2 => 2..3, 3 => 6..7, 4 => 8..9, 5 => 10..11}
-      }
-  """
-  @spec compose(Enum.t(), %{term => Range.t()}) :: {Tensorex.t(), %{term => Range.t()}}
-  def compose(matrix_and_node_ids, range_indices \\ %{}) do
-    {elements, new_range_indices} =
-      Enum.map_reduce(matrix_and_node_ids, range_indices, fn {matrices, nodes}, acc ->
-        Stream.zip(matrices, nodes)
-        |> Stream.map(fn {row, node} ->
-          Stream.zip(row, nodes) |> Stream.map(&Tuple.insert_at(&1, 1, node))
-        end)
-        |> Stream.concat()
-        |> Enum.map_reduce(acc, fn
-          {%Tensorex{} = matrix, node1, node2}, ranges
-          when is_map_key(ranges, node1) and is_map_key(ranges, node2) ->
-            size = max(Enum.max(ranges[node1]), Enum.max(ranges[node2])) + 1
-            {put_in(Tensorex.zero([size, size])[[ranges[node1], ranges[node2]]], matrix), ranges}
-
-          {%Tensorex{shape: [degree | _]} = matrix, node1, node2}, ranges
-          when is_map_key(ranges, node1) ->
-            max_index = Map.values(ranges) |> Stream.map(&Enum.max/1) |> Enum.max(fn -> -1 end)
-            new_max_index = max_index + degree
-            range = (max_index + 1)..new_max_index
-            size = new_max_index + 1
-
-            {
-              put_in(Tensorex.zero([size, size])[[ranges[node1], range]], matrix),
-              Map.put(ranges, node2, range)
-            }
-
-          {%Tensorex{shape: [degree | _]} = matrix, node, node}, ranges ->
-            max_index = Map.values(ranges) |> Stream.map(&Enum.max/1) |> Enum.max(fn -> -1 end)
-            new_max_index = max_index + degree
-            range = (max_index + 1)..new_max_index
-            size = new_max_index + 1
-
-            {
-              put_in(Tensorex.zero([size, size])[[range, range]], matrix),
-              Map.put(ranges, node, range)
-            }
-        end)
-      end)
-
-    composed =
-      Stream.concat(elements)
-      |> Enum.reduce(fn
-        %Tensorex{shape: [deg1 | _]} = element1, %Tensorex{shape: [deg2 | _] = shape} = element2
-        when deg1 < deg2 ->
-          element1 |> Tensorex.reshape(shape) |> Tensorex.Operator.add(element2)
-
-        %Tensorex{shape: [degree | _]} = element1, %Tensorex{shape: [degree | _]} = element2 ->
-          element2 |> Tensorex.Operator.add(element1)
-
-        %Tensorex{shape: shape} = element1, element2 ->
-          element2 |> Tensorex.reshape(shape) |> Tensorex.Operator.add(element1)
-      end)
-
-    {composed, new_range_indices}
   end
 
   @doc """
