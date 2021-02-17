@@ -1,4 +1,4 @@
-defmodule Structex.InsertedWoodenSidingWall do
+defmodule Structex.Hysteresis.InsertedWoodenSidingWall do
   @moduledoc """
   Calculates rigidity and ultimate strength of the inserted wooden siding walls.
   Depending the following study.

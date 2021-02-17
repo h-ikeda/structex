@@ -1,6 +1,6 @@
-defmodule Structex.InsertedWoodenSidingWallTest do
+defmodule Structex.Hysteresis.InsertedWoodenSidingWallTest do
   use ExUnit.Case, async: true
-  alias Structex.InsertedWoodenSidingWall
+  alias Structex.Hysteresis.InsertedWoodenSidingWall
   doctest InsertedWoodenSidingWall
 
   test "first_slip_deformation_angle/4" do
