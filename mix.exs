@@ -20,7 +20,13 @@ defmodule Structex.MixProject do
       package: [
         licenses: ["MIT"],
         links: %{"GitHub" => "https://github.com/h-ikeda/structex"}
-      ]
+      ],
+      dialyzer:
+        if System.get_env("CI") do
+          [plt_file: {:no_warn, "dialyzer.plt"}]
+        else
+          []
+        end
     ]
   end
 
