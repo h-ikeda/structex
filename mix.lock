@@ -8,5 +8,5 @@
   "makeup_elixir": {:hex, :makeup_elixir, "0.15.1", "b5888c880d17d1cc3e598f05cdb5b5a91b7b17ac4eaf5f297cb697663a1094dd", [:mix], [{:makeup, "~> 1.0", [hex: :makeup, repo: "hexpm", optional: false]}, {:nimble_parsec, "~> 1.1", [hex: :nimble_parsec, repo: "hexpm", optional: false]}], "hexpm", "db68c173234b07ab2a07f645a5acdc117b9f99d69ebf521821d89690ae6c6ec8"},
   "makeup_erlang": {:hex, :makeup_erlang, "0.1.1", "3fcb7f09eb9d98dc4d208f49cc955a34218fc41ff6b84df7c75b3e6e533cc65f", [:mix], [{:makeup, "~> 1.0", [hex: :makeup, repo: "hexpm", optional: false]}], "hexpm", "174d0809e98a4ef0b3309256cbf97101c6ec01c4ab0b23e926a9e17df2077cbb"},
   "nimble_parsec": {:hex, :nimble_parsec, "1.1.0", "3a6fca1550363552e54c216debb6a9e95bd8d32348938e13de5eda962c0d7f89", [:mix], [], "hexpm", "08eb32d66b706e913ff748f11694b17981c0b04a33ef470e33e11b3d3ac8f54b"},
-  "tensorex": {:hex, :tensorex, "0.5.1", "2c47459bc80530a61834e57038a64e9c431dd65a8e23c58b9fae83af62d6d12d", [:mix], [], "hexpm", "09d6ec1a106a9f22790f992e6d9df8ad5a56295820f011776487e39cce3edec6"},
+  "tensorex": {:hex, :tensorex, "0.6.0", "a1920084ac7a9a1908bb62032f820d53e8b1405c4fd859eb8dd973d22e4d1be7", [:mix], [], "hexpm", "6f9f1c7c0acf25bf85416d6ff0774b749bf69ad5baacf4483d5dc5a8d96523a0"},
 }
